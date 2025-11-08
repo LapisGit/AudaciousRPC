@@ -131,7 +131,8 @@ namespace AudaciousRPC
                                 Assets = new Assets()
                                 {
                                     LargeImageKey = albumArtUrl,
-                                    LargeImageText = "Playing",
+                                    LargeImageText = songInfo.Album,
+                                    SmallImageText = "Playing",
                                     SmallImageKey = "play"
                                 },
                             });
@@ -152,7 +153,8 @@ namespace AudaciousRPC
                                 Assets = new Assets()
                                 {
                                     LargeImageKey = "audacious_logo",
-                                    LargeImageText = "Playing",
+                                    LargeImageText = songInfo.Album,
+                                    SmallImageText = "Playing",
                                     SmallImageKey = "play"
                                 },
                             });
@@ -170,7 +172,8 @@ namespace AudaciousRPC
                             Assets = new Assets()
                             {
                                 LargeImageKey = "audacious_logo",
-                                LargeImageText = "Idle",
+                                LargeImageText = songInfo.Album,
+                                SmallImageText = "Idle",
                                 SmallImageKey = "pause"
                             },
                         });
@@ -188,7 +191,8 @@ namespace AudaciousRPC
                                 Assets = new Assets()
                                 {
                                     LargeImageKey = albumArtUrl,
-                                    LargeImageText = "Paused",
+                                    LargeImageText = songInfo.Album,
+                                    SmallImageText = "Paused",
                                     SmallImageKey = "pause"
                                 },
                             });
@@ -204,7 +208,7 @@ namespace AudaciousRPC
                                 Assets = new Assets()
                                 {
                                     LargeImageKey = "audacious_logo",
-                                    LargeImageText = "Paused",
+                                    SmallImageText = "Paused",
                                     SmallImageKey = "pause"
                                 },
                             });
