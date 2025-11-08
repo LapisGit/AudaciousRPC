@@ -37,7 +37,7 @@ namespace AudaciousRPC
                 {
                     string playbackStatus = GetPlaybackStatus();
                     
-                    Console.WriteLine($"Song changed: {songInfo.Artist} - {songInfo.Album} - {songInfo.Title} [{playbackStatus}]");
+                    // Console.WriteLine($"Status: {songInfo.Artist} - {songInfo.Album} - {songInfo.Title} [{playbackStatus}]");
                     
                     string albumArtUrl = await GetAlbumArtUrlAsync(songInfo.Artist, songInfo.Album);
                     
