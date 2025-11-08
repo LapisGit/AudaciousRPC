@@ -11,11 +11,18 @@ namespace AudaciousRPC
         private const string DEFAULT_AUDTOOL_PATH = @"C:\Program Files (x86)\Audacious\bin\audtool.exe";
         private const string CONFIG_FILE = "config.json";
         public static string AUDTOOL_PATH;
+        public static string LASTFM_API_KEY;
+        public static string LASTFM_API_SECRET;
+        public static string LASTFM_SESSION_KEY;
         public static DiscordRpcClient client;
         private static readonly HttpClient httpClient = new HttpClient();
         private static string lastAlbum = "";
         private static string cachedAlbumArtUrl = "";
         private static bool isDiscordConnected = false;
+        private static bool hasScrobbled = false;
+        private static bool hasUpdatedNowPlaying = false;
+        private static string lastScrobbledTrack = "";
+        private static DateTime trackStartTime = DateTime.MinValue;
         
 
         public static async Task Main(string[] args)
@@ -43,6 +50,12 @@ namespace AudaciousRPC
             
             httpClient.DefaultRequestHeaders.Add("User-Agent", "AudaciousRPC/1.0");
             
+            // Authenticate with Last.fm if API key is provided but no session key exists
+            if (!string.IsNullOrEmpty(LASTFM_API_KEY) && !string.IsNullOrEmpty(LASTFM_API_SECRET) && string.IsNullOrEmpty(LASTFM_SESSION_KEY))
+            {
+                await AuthenticateLastFm();
+            }
+            
             while (true)
             {
                 var songInfo = GetCurrentSongInfo();
@@ -68,11 +81,40 @@ namespace AudaciousRPC
                         albumArtUrl = cachedAlbumArtUrl;
                     }
                     
+                    // Track identifier for scrobbling
+                    string currentTrackId = $"{songInfo.Artist}|{songInfo.Album}|{songInfo.Title}";
+                    
+                    // Reset scrobble state if track changed
+                    if (lastScrobbledTrack != currentTrackId)
+                    {
+                        hasScrobbled = false;
+                        hasUpdatedNowPlaying = false;
+                        lastScrobbledTrack = currentTrackId;
+                        trackStartTime = DateTime.UtcNow.AddSeconds(-songInfo.CurrentPosition);
+                    }
+                    
                     if (playbackStatus == "playing")
                     {
                         DateTime now = DateTime.UtcNow;
                         DateTime startTime = now.AddSeconds(-songInfo.CurrentPosition);
                         DateTime endTime = startTime.AddSeconds(songInfo.Length);
+                        
+                        if (!string.IsNullOrEmpty(LASTFM_SESSION_KEY))
+                        {
+                            // now playing
+                            if (!hasUpdatedNowPlaying)
+                            {
+                                await UpdateNowPlaying(songInfo);
+                                hasUpdatedNowPlaying = true;
+                            }
+                            
+                            // scrobble
+                            if (!hasScrobbled)
+                            {
+                                await ScrobbleTrack(songInfo, trackStartTime);
+                                hasScrobbled = true;
+                            }
+                        }
                         
                         if (!string.IsNullOrEmpty(albumArtUrl))
                         {
@@ -278,7 +320,16 @@ namespace AudaciousRPC
         {
             try
             {
-                // search for release on musicbrainz
+                // use lastfm because its easier and faster
+                string lastFmUrl = await GetLastFmAlbumArtAsync(artist, album);
+                if (!string.IsNullOrEmpty(lastFmUrl))
+                {
+                    return lastFmUrl;
+                }
+                
+                // fallback if it doesnt exist on lastfm
+                
+                // search musicbrainz for release id
                 string searchUrl = $"https://musicbrainz.org/ws/2/release/?query=artist:{Uri.EscapeDataString(artist)}%20AND%20release:{Uri.EscapeDataString(album)}&fmt=json&limit=1";
                 
                 var searchResponse = await httpClient.GetStringAsync(searchUrl);
@@ -324,14 +375,23 @@ namespace AudaciousRPC
                     string jsonContent = File.ReadAllText(CONFIG_FILE);
                     var config = JObject.Parse(jsonContent);
                     AUDTOOL_PATH = config["audtoolPath"]?.ToString() ?? DEFAULT_AUDTOOL_PATH;
+                    LASTFM_API_KEY = config["lastFmApiKey"]?.ToString() ?? "";
+                    LASTFM_API_SECRET = config["lastFmApiSecret"]?.ToString() ?? "";
+                    LASTFM_SESSION_KEY = config["lastFmSessionKey"]?.ToString() ?? "";
                     Console.WriteLine($"Loaded config: Using audtool path: {AUDTOOL_PATH}");
                 }
                 else
                 {
                     AUDTOOL_PATH = DEFAULT_AUDTOOL_PATH;
+                    LASTFM_API_KEY = "";
+                    LASTFM_API_SECRET = "";
+                    LASTFM_SESSION_KEY = "";
                     var defaultConfig = new JObject
                     {
-                        ["audtoolPath"] = DEFAULT_AUDTOOL_PATH
+                        ["audtoolPath"] = DEFAULT_AUDTOOL_PATH,
+                        ["lastFmApiKey"] = "",
+                        ["lastFmApiSecret"] = "",
+                        ["lastFmSessionKey"] = ""
                     };
                     File.WriteAllText(CONFIG_FILE, defaultConfig.ToString());
                     Console.WriteLine($"Created default config file: {CONFIG_FILE}");
@@ -343,6 +403,278 @@ namespace AudaciousRPC
                 Console.WriteLine($"Error loading config: {ex.Message}");
                 Console.WriteLine($"Using default audtool path: {DEFAULT_AUDTOOL_PATH}");
                 AUDTOOL_PATH = DEFAULT_AUDTOOL_PATH;
+                LASTFM_API_KEY = "";
+                LASTFM_API_SECRET = "";
+                LASTFM_SESSION_KEY = "";
+            }
+        }
+
+        private static async Task AuthenticateLastFm()
+        {
+            try
+            {
+                Console.WriteLine("Authenticating with Last.fm...");
+                
+                // grab token
+                string token = await GetLastFmToken();
+                if (string.IsNullOrEmpty(token))
+                {
+                    Console.WriteLine("Failed to get Last.fm token");
+                    return;
+                }
+                
+                // generate auth url
+                string authUrl = $"http://www.last.fm/api/auth/?api_key={LASTFM_API_KEY}&token={token}";
+                Console.WriteLine($"Please authorize this application in your browser:");
+                Console.WriteLine(authUrl);
+                
+                // open website to authorize
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = authUrl,
+                    UseShellExecute = true
+                });
+                
+                Console.WriteLine("Press Enter after you've authorized the application...");
+                Console.ReadLine();
+                
+                // grab session
+                string sessionKey = await GetLastFmSessionKey(token);
+                if (string.IsNullOrEmpty(sessionKey))
+                {
+                    Console.WriteLine("Failed to get Last.fm session key");
+                    return;
+                }
+                
+                // save session for future use
+                LASTFM_SESSION_KEY = sessionKey;
+                SaveSessionKeyToConfig(sessionKey);
+                
+                Console.WriteLine("Successfully authenticated with Last.fm!");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error authenticating with Last.fm: {ex.Message}");
+            }
+        }
+
+        private static async Task<string> GetLastFmToken()
+        {
+            try
+            {
+                string apiSig = GenerateLastFmSignature(new Dictionary<string, string>
+                {
+                    { "method", "auth.gettoken" },
+                    { "api_key", LASTFM_API_KEY }
+                });
+                
+                string url = $"http://ws.audioscrobbler.com/2.0/?method=auth.gettoken&api_key={LASTFM_API_KEY}&api_sig={apiSig}&format=json";
+                
+                var response = await httpClient.GetStringAsync(url);
+                var json = JObject.Parse(response);
+                
+                return json["token"]?.ToString();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting Last.fm token: {ex.Message}");
+                return null;
+            }
+        }
+
+        private static async Task<string> GetLastFmSessionKey(string token)
+        {
+            try
+            {
+                string apiSig = GenerateLastFmSignature(new Dictionary<string, string>
+                {
+                    { "method", "auth.getsession" },
+                    { "api_key", LASTFM_API_KEY },
+                    { "token", token }
+                });
+                
+                string url = $"http://ws.audioscrobbler.com/2.0/?method=auth.getsession&api_key={LASTFM_API_KEY}&token={token}&api_sig={apiSig}&format=json";
+                
+                var response = await httpClient.GetStringAsync(url);
+                var json = JObject.Parse(response);
+                
+                return json["session"]?["key"]?.ToString();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting Last.fm session key: {ex.Message}");
+                return null;
+            }
+        }
+
+        private static string GenerateLastFmSignature(Dictionary<string, string> parameters)
+        {
+            var sorted = parameters.OrderBy(x => x.Key);
+            
+            string sigString = "";
+            foreach (var param in sorted)
+            {
+                sigString += param.Key + param.Value;
+            }
+            sigString += LASTFM_API_SECRET;
+            
+            using (var md5 = System.Security.Cryptography.MD5.Create())
+            {
+                byte[] inputBytes = System.Text.Encoding.UTF8.GetBytes(sigString);
+                byte[] hashBytes = md5.ComputeHash(inputBytes);
+                
+                return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+            }
+        }
+
+        private static void SaveSessionKeyToConfig(string sessionKey)
+        {
+            try
+            {
+                string jsonContent = File.ReadAllText(CONFIG_FILE);
+                var config = JObject.Parse(jsonContent);
+                config["lastFmSessionKey"] = sessionKey;
+                File.WriteAllText(CONFIG_FILE, config.ToString());
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error saving session key to config: {ex.Message}");
+            }
+        }
+
+        private static async Task<string> GetLastFmAlbumArtAsync(string artist, string album)
+        {
+            try
+            {
+                string url = $"http://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key={LASTFM_API_KEY}&artist={Uri.EscapeDataString(artist)}&album={Uri.EscapeDataString(album)}&format=json";
+                
+                var response = await httpClient.GetStringAsync(url);
+                var json = JObject.Parse(response);
+                
+                var images = json["album"]?["image"];
+                if (images != null && images.HasValues)
+                {
+                    var largestImage = images.LastOrDefault(i => i["size"]?.ToString() == "extralarge" || i["size"]?.ToString() == "mega");
+                    if (largestImage == null)
+                    {
+                        largestImage = images.Last();
+                    }
+                    
+                    string imageUrl = largestImage["#text"]?.ToString();
+                    if (!string.IsNullOrEmpty(imageUrl))
+                    {
+                        return imageUrl;
+                    }
+                }
+                
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error fetching Last.fm album art: {ex.Message}");
+                return null;
+            }
+        }
+
+        private static async Task UpdateNowPlaying(SongInfo song)
+        {
+            try
+            {
+                var parameters = new Dictionary<string, string>
+                {
+                    { "method", "track.updateNowPlaying" },
+                    { "artist", song.Artist },
+                    { "track", song.Title },
+                    { "album", song.Album },
+                    { "api_key", LASTFM_API_KEY },
+                    { "sk", LASTFM_SESSION_KEY }
+                };
+                
+                if (song.Length > 0)
+                {
+                    parameters.Add("duration", song.Length.ToString());
+                }
+                
+                string apiSig = GenerateLastFmSignature(parameters);
+                
+                var content = new FormUrlEncodedContent(new[]
+                {
+                    new KeyValuePair<string, string>("method", "track.updateNowPlaying"),
+                    new KeyValuePair<string, string>("artist", song.Artist),
+                    new KeyValuePair<string, string>("track", song.Title),
+                    new KeyValuePair<string, string>("album", song.Album),
+                    new KeyValuePair<string, string>("duration", song.Length.ToString()),
+                    new KeyValuePair<string, string>("api_key", LASTFM_API_KEY),
+                    new KeyValuePair<string, string>("sk", LASTFM_SESSION_KEY),
+                    new KeyValuePair<string, string>("api_sig", apiSig),
+                    new KeyValuePair<string, string>("format", "json")
+                });
+                
+                var response = await httpClient.PostAsync("http://ws.audioscrobbler.com/2.0/", content);
+                var responseText = await response.Content.ReadAsStringAsync();
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"Now Playing updated on Last.fm: {song.Artist} - {song.Title}");
+                }
+                else
+                {
+                    Console.WriteLine($"Failed to update Now Playing on Last.fm: {responseText}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating Now Playing on Last.fm: {ex.Message}");
+            }
+        }
+
+        private static async Task ScrobbleTrack(SongInfo song, DateTime startTime)
+        {
+            try
+            {
+                long timestamp = new DateTimeOffset(startTime).ToUnixTimeSeconds();
+                
+                var parameters = new Dictionary<string, string>
+                {
+                    { "method", "track.scrobble" },
+                    { "artist", song.Artist },
+                    { "track", song.Title },
+                    { "timestamp", timestamp.ToString() },
+                    { "album", song.Album },
+                    { "api_key", LASTFM_API_KEY },
+                    { "sk", LASTFM_SESSION_KEY }
+                };
+                
+                string apiSig = GenerateLastFmSignature(parameters);
+                
+                var content = new FormUrlEncodedContent(new[]
+                {
+                    new KeyValuePair<string, string>("method", "track.scrobble"),
+                    new KeyValuePair<string, string>("artist", song.Artist),
+                    new KeyValuePair<string, string>("track", song.Title),
+                    new KeyValuePair<string, string>("timestamp", timestamp.ToString()),
+                    new KeyValuePair<string, string>("album", song.Album),
+                    new KeyValuePair<string, string>("api_key", LASTFM_API_KEY),
+                    new KeyValuePair<string, string>("sk", LASTFM_SESSION_KEY),
+                    new KeyValuePair<string, string>("api_sig", apiSig),
+                    new KeyValuePair<string, string>("format", "json")
+                });
+                
+                var response = await httpClient.PostAsync("http://ws.audioscrobbler.com/2.0/", content);
+                var responseText = await response.Content.ReadAsStringAsync();
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"Scrobbled to Last.fm: {song.Artist} - {song.Title}");
+                }
+                else
+                {
+                    Console.WriteLine($"Failed to scrobble to Last.fm: {responseText}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error scrobbling to Last.fm: {ex.Message}");
             }
         }
     }

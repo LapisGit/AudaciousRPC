@@ -1,4 +1,7 @@
 ﻿{
-  "audtoolPath": "C:\Program Files (x86)\Audacious\bin\audtool.exe"
+  "audtoolPath": "C:\\Program Files (x86)\\Audacious\\bin\\audtool.exe",
+  "lastFmApiKey": "",
+  "lastFmApiSecret": "",
+  "lastFmSessionKey": ""
 }
 
