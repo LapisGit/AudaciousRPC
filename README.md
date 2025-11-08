@@ -14,4 +14,4 @@ Discord Rich Presense for Audacious
 </div>
 
 > [!WARNING]  
-> This application is specifically made for *Windows* if you use Linux, use [this](https://github.com/onegentig/audacious-discord-rpc) plugin.
+> This application is specifically made for *Windows*, if you use Linux, use [this](https://github.com/onegentig/audacious-discord-rpc) plugin.
