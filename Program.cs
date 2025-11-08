@@ -122,8 +122,8 @@ namespace AudaciousRPC
                             {
                                 Type = ActivityType.Listening,
                                 Details = $"{songInfo.Title}",
-                                State = $"by {songInfo.Artist}",
-                                StatusDisplay = StatusDisplayType.Details,
+                                State = $"{songInfo.Artist}",
+                                StatusDisplay = StatusDisplayType.State,
                                 Timestamps = new Timestamps()
                                 {
                                     Start = startTime,
@@ -146,8 +146,8 @@ namespace AudaciousRPC
                             {
                                 Type = ActivityType.Listening,
                                 Details = $"{songInfo.Title}",
-                                State = $"by {songInfo.Artist}",
-                                StatusDisplay = StatusDisplayType.Details,
+                                State = $"{songInfo.Artist}",
+                                StatusDisplay = StatusDisplayType.State,
                                 Timestamps = new Timestamps()
                                 {
                                     Start = startTime,
@@ -193,8 +193,8 @@ namespace AudaciousRPC
                             {
                                 Type = ActivityType.Listening,
                                 Details = $"{songInfo.Title}",
-                                State = $"by {songInfo.Artist}",
-                                StatusDisplay = StatusDisplayType.Details,
+                                State = $"{songInfo.Artist}",
+                                StatusDisplay = StatusDisplayType.State,
                                 Assets = new Assets()
                                 {
                                     LargeImageKey = albumArtUrl,
@@ -212,8 +212,8 @@ namespace AudaciousRPC
                             {
                                 Type = ActivityType.Listening,
                                 Details = $"{songInfo.Title}",
-                                State = $"by {songInfo.Artist}",
-                                StatusDisplay = StatusDisplayType.Details,
+                                State = $"{songInfo.Artist}",
+                                StatusDisplay = StatusDisplayType.State,
                                 Assets = new Assets()
                                 {
                                     LargeImageKey = "audacious_logo",
