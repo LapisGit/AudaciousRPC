@@ -132,7 +132,7 @@ namespace AudaciousRPC
                                 Assets = new Assets()
                                 {
                                     LargeImageKey = albumArtUrl,
-                                    LargeImageText = $"on {songInfo.Album}",
+                                    LargeImageText = $"{songInfo.Album}",
                                     SmallImageText = "Playing",
                                     SmallImageKey = "play"
                                 },
@@ -156,7 +156,7 @@ namespace AudaciousRPC
                                 Assets = new Assets()
                                 {
                                     LargeImageKey = "audacious_logo",
-                                    LargeImageText = $"on {songInfo.Album}",
+                                    LargeImageText = $"{songInfo.Album}",
                                     SmallImageText = "Playing",
                                     SmallImageKey = "play"
                                 },
@@ -198,7 +198,7 @@ namespace AudaciousRPC
                                 Assets = new Assets()
                                 {
                                     LargeImageKey = albumArtUrl,
-                                    LargeImageText = $"on {songInfo.Album}",
+                                    LargeImageText = $"{songInfo.Album}",
                                     SmallImageText = "Paused",
                                     SmallImageKey = "pause"
                                 },
@@ -217,7 +217,7 @@ namespace AudaciousRPC
                                 Assets = new Assets()
                                 {
                                     LargeImageKey = "audacious_logo",
-                                    LargeImageText = $"on {songInfo.Album}",
+                                    LargeImageText = $"{songInfo.Album}",
                                     SmallImageText = "Paused",
                                     SmallImageKey = "pause"
                                 },
@@ -440,7 +440,7 @@ namespace AudaciousRPC
                 
                 // generate auth url
                 string authUrl = $"http://www.last.fm/api/auth/?api_key={LASTFM_API_KEY}&token={token}";
-                Console.WriteLine($"Please authorize this application in your browser:");
+                Console.WriteLine($"Please authorize this applicati` in your browser:");
                 Console.WriteLine(authUrl);
                 
                 // open website to authorize
