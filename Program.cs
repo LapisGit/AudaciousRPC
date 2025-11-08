@@ -320,14 +320,17 @@ namespace AudaciousRPC
         {
             try
             {
-                // use lastfm because its easier and faster
-                string lastFmUrl = await GetLastFmAlbumArtAsync(artist, album);
-                if (!string.IsNullOrEmpty(lastFmUrl))
+                // use lastfm because its easier and faster if an api key is provided
+                if (!string.IsNullOrEmpty(LASTFM_API_KEY))
                 {
-                    return lastFmUrl;
+                    string lastFmArtUrl = await GetLastFmAlbumArtAsync(artist, album);
+                    if (!string.IsNullOrEmpty(lastFmArtUrl))
+                    {
+                        return lastFmArtUrl;
+                    }
                 }
                 
-                // fallback if it doesnt exist on lastfm
+                // fallback if it doesnt exist on lastfm/no api key provided
                 
                 // search musicbrainz for release id
                 string searchUrl = $"https://musicbrainz.org/ws/2/release/?query=artist:{Uri.EscapeDataString(artist)}%20AND%20release:{Uri.EscapeDataString(album)}&fmt=json&limit=1";
