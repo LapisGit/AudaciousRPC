@@ -8,13 +8,17 @@ namespace AudaciousRPC
     public class Program
     {
         public const string DISCORD_APP_ID = "1395545705069805628";
-        public const string AUDTOOL_PATH = @"C:\Program Files (x86)\Audacious\bin\audtool.exe"; // replace with your path if needed, default installation path bc im too lazy to make a config lol
+        private const string DEFAULT_AUDTOOL_PATH = @"C:\Program Files (x86)\Audacious\bin\audtool.exe";
+        private const string CONFIG_FILE = "config.json";
+        public static string AUDTOOL_PATH;
         public static DiscordRpcClient client;
         private static readonly HttpClient httpClient = new HttpClient();
         
 
         public static async Task Main(string[] args)
         {
+            LoadConfig();
+            
             client = new DiscordRpcClient(DISCORD_APP_ID)
             {
                 Logger = new ConsoleLogger(LogLevel.Info, true)
@@ -264,7 +268,7 @@ namespace AudaciousRPC
                     
                     if (!string.IsNullOrEmpty(releaseId))
                     {
-                        // grab art using realease id from musicbrainz
+                        // grab art using release id from musicbrainz
                         string coverArtUrl = $"https://coverartarchive.org/release/{releaseId}/front-500";
                         
                         // make sure it exists
@@ -273,7 +277,7 @@ namespace AudaciousRPC
                         
                         if (headResponse.IsSuccessStatusCode)
                         {
-                            // yay! its here!
+                            // yay! it's here!
                             return coverArtUrl;
                         }
                     }
@@ -285,6 +289,37 @@ namespace AudaciousRPC
             {
                 Console.WriteLine($"Error fetching album art: {ex.Message}");
                 return null;
+            }
+        }
+
+        private static void LoadConfig()
+        {
+            try
+            {
+                if (File.Exists(CONFIG_FILE))
+                {
+                    string jsonContent = File.ReadAllText(CONFIG_FILE);
+                    var config = JObject.Parse(jsonContent);
+                    AUDTOOL_PATH = config["audtoolPath"]?.ToString() ?? DEFAULT_AUDTOOL_PATH;
+                    Console.WriteLine($"Loaded config: Using audtool path: {AUDTOOL_PATH}");
+                }
+                else
+                {
+                    AUDTOOL_PATH = DEFAULT_AUDTOOL_PATH;
+                    var defaultConfig = new JObject
+                    {
+                        ["audtoolPath"] = DEFAULT_AUDTOOL_PATH
+                    };
+                    File.WriteAllText(CONFIG_FILE, defaultConfig.ToString());
+                    Console.WriteLine($"Created default config file: {CONFIG_FILE}");
+                    Console.WriteLine($"Using default audtool path: {AUDTOOL_PATH}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading config: {ex.Message}");
+                Console.WriteLine($"Using default audtool path: {DEFAULT_AUDTOOL_PATH}");
+                AUDTOOL_PATH = DEFAULT_AUDTOOL_PATH;
             }
         }
     }
