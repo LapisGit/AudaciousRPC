@@ -261,13 +261,11 @@ namespace AudaciousRPC
         {
             try
             {
-                string songOutput = ExecuteAudtoolCommand("current-song");
-                if (string.IsNullOrWhiteSpace(songOutput))
-                    return null;
-
-                // parse song info
-                string[] parts = songOutput.Split(new[] { " - " }, StringSplitOptions.None);
-                if (parts.Length < 3)
+                string artist = ExecuteAudtoolCommand("current-song-tuple-data artist");
+                string album = ExecuteAudtoolCommand("current-song-tuple-data album");
+                string title = ExecuteAudtoolCommand("current-song-tuple-data title");
+                
+                if (string.IsNullOrWhiteSpace(artist) || string.IsNullOrWhiteSpace(album) || string.IsNullOrWhiteSpace(title))
                     return null;
 
                 // song length in seconds
@@ -288,9 +286,9 @@ namespace AudaciousRPC
 
                 return new SongInfo
                 {
-                    Artist = parts[0].Trim(),
-                    Album = parts[1].Trim(),
-                    Title = string.Join(" - ", parts.Skip(2)).Trim(),
+                    Artist = artist.Trim(),
+                    Album = album.Trim(),
+                    Title = title.Trim(),
                     Length = length,
                     CurrentPosition = currentPosition
                 };
