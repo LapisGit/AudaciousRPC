@@ -11,23 +11,13 @@ namespace AudaciousRPC
         public const string AUDTOOL_PATH = @"C:\Program Files (x86)\Audacious\bin\audtool.exe"; // replace with your path if needed, default installation path bc im too lazy to make a config lol
         public static DiscordRpcClient client;
         private static readonly HttpClient httpClient = new HttpClient();
-        private static bool headlessMode = false;
         
 
         public static async Task Main(string[] args)
         {
-            foreach (var arg in args)
-            {
-                if (arg.ToLower() == "-h")
-                {
-                    headlessMode = true;
-                    break;
-                }
-            }
-
             client = new DiscordRpcClient(DISCORD_APP_ID)
             {
-                Logger = headlessMode ? null : new ConsoleLogger(LogLevel.Info, true)
+                Logger = new ConsoleLogger(LogLevel.Info, true)
             };
 
             client.OnReady += (sender, e) =>
