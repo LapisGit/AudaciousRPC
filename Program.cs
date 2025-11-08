@@ -13,6 +13,9 @@ namespace AudaciousRPC
         public static string AUDTOOL_PATH;
         public static DiscordRpcClient client;
         private static readonly HttpClient httpClient = new HttpClient();
+        private static string lastAlbum = "";
+        private static string cachedAlbumArtUrl = "";
+        private static bool isDiscordConnected = false;
         
 
         public static async Task Main(string[] args)
@@ -27,9 +30,16 @@ namespace AudaciousRPC
             client.OnReady += (sender, e) =>
             {
                 Console.WriteLine("Connected to discord with user {0}", e.User.Username);
+                isDiscordConnected = true;
             };
             
             client.Initialize();
+            
+            Console.WriteLine("waiting for discord to be alive lol");
+            while (!isDiscordConnected)
+            {
+                await Task.Delay(100);
+            }
             
             httpClient.DefaultRequestHeaders.Add("User-Agent", "AudaciousRPC/1.0");
             
@@ -42,8 +52,21 @@ namespace AudaciousRPC
                     string playbackStatus = GetPlaybackStatus();
                     
                     // Console.WriteLine($"Status: {songInfo.Artist} - {songInfo.Album} - {songInfo.Title} [{playbackStatus}]");
+                    // ^ debug logging
                     
-                    string albumArtUrl = await GetAlbumArtUrlAsync(songInfo.Artist, songInfo.Album);
+                    // only fetch album art if the album has changed, should prevent album art from showing up and then disappearing
+                    string albumArtUrl;
+                    if (lastAlbum != songInfo.Album)
+                    {
+                        Console.WriteLine("album changed, fetching new album art");
+                        albumArtUrl = await GetAlbumArtUrlAsync(songInfo.Artist, songInfo.Album);
+                        lastAlbum = songInfo.Album;
+                        cachedAlbumArtUrl = albumArtUrl;
+                    }
+                    else
+                    {
+                        albumArtUrl = cachedAlbumArtUrl;
+                    }
                     
                     if (playbackStatus == "playing")
                     {
