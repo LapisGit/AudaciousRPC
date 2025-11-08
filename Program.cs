@@ -122,7 +122,7 @@ namespace AudaciousRPC
                             {
                                 Type = ActivityType.Listening,
                                 Details = $"{songInfo.Title}",
-                                State = $"by {songInfo.Artist} on {songInfo.Album}",
+                                State = $"by {songInfo.Artist}",
                                 Timestamps = new Timestamps()
                                 {
                                     Start = startTime,
@@ -131,7 +131,7 @@ namespace AudaciousRPC
                                 Assets = new Assets()
                                 {
                                     LargeImageKey = albumArtUrl,
-                                    LargeImageText = songInfo.Album,
+                                    LargeImageText = $"on {songInfo.Album}",
                                     SmallImageText = "Playing",
                                     SmallImageKey = "play"
                                 },
@@ -144,7 +144,7 @@ namespace AudaciousRPC
                             client.SetPresence(new RichPresence()
                             {
                                 Details = $"{songInfo.Title}",
-                                State = $"by {songInfo.Artist} on {songInfo.Album}",
+                                State = $"by {songInfo.Artist}",
                                 Timestamps = new Timestamps()
                                 {
                                     Start = startTime,
@@ -153,7 +153,7 @@ namespace AudaciousRPC
                                 Assets = new Assets()
                                 {
                                     LargeImageKey = "audacious_logo",
-                                    LargeImageText = songInfo.Album,
+                                    LargeImageText = $"on {songInfo.Album}",
                                     SmallImageText = "Playing",
                                     SmallImageKey = "play"
                                 },
@@ -172,7 +172,7 @@ namespace AudaciousRPC
                             Assets = new Assets()
                             {
                                 LargeImageKey = "audacious_logo",
-                                LargeImageText = songInfo.Album,
+                                LargeImageText = $"on {songInfo.Album}",
                                 SmallImageText = "Idle",
                                 SmallImageKey = "pause"
                             },
@@ -187,11 +187,11 @@ namespace AudaciousRPC
                             client.SetPresence(new RichPresence()
                             {
                                 Details = $"{songInfo.Title}",
-                                State = $"by {songInfo.Artist} on {songInfo.Album}",
+                                State = $"by {songInfo.Artist}",
                                 Assets = new Assets()
                                 {
                                     LargeImageKey = albumArtUrl,
-                                    LargeImageText = songInfo.Album,
+                                    LargeImageText = $"on {songInfo.Album}",
                                     SmallImageText = "Paused",
                                     SmallImageKey = "pause"
                                 },
@@ -204,10 +204,11 @@ namespace AudaciousRPC
                             client.SetPresence(new RichPresence()
                             {
                                 Details = $"{songInfo.Title}",
-                                State = $"by {songInfo.Artist} on {songInfo.Album}",
+                                State = $"by {songInfo.Artist}",
                                 Assets = new Assets()
                                 {
                                     LargeImageKey = "audacious_logo",
+                                    LargeImageText = $"on {songInfo.Album}",
                                     SmallImageText = "Paused",
                                     SmallImageKey = "pause"
                                 },
