@@ -123,6 +123,7 @@ namespace AudaciousRPC
                                 Type = ActivityType.Listening,
                                 Details = $"{songInfo.Title}",
                                 State = $"by {songInfo.Artist}",
+                                StatusDisplay = StatusDisplayType.Details,
                                 Timestamps = new Timestamps()
                                 {
                                     Start = startTime,
@@ -143,8 +144,10 @@ namespace AudaciousRPC
                         {
                             client.SetPresence(new RichPresence()
                             {
+                                Type = ActivityType.Listening,
                                 Details = $"{songInfo.Title}",
                                 State = $"by {songInfo.Artist}",
+                                StatusDisplay = StatusDisplayType.Details,
                                 Timestamps = new Timestamps()
                                 {
                                     Start = startTime,
@@ -167,12 +170,14 @@ namespace AudaciousRPC
                         
                         client.SetPresence(new RichPresence()
                         {
+                            Type = ActivityType.Listening,
                             Details = "",
                             State = "Idle",
+                            StatusDisplay = StatusDisplayType.Name,
                             Assets = new Assets()
                             {
                                 LargeImageKey = "audacious_logo",
-                                LargeImageText = $"on {songInfo.Album}",
+                                LargeImageText = "",
                                 SmallImageText = "Idle",
                                 SmallImageKey = "pause"
                             },
@@ -186,8 +191,10 @@ namespace AudaciousRPC
                         {
                             client.SetPresence(new RichPresence()
                             {
+                                Type = ActivityType.Listening,
                                 Details = $"{songInfo.Title}",
                                 State = $"by {songInfo.Artist}",
+                                StatusDisplay = StatusDisplayType.Details,
                                 Assets = new Assets()
                                 {
                                     LargeImageKey = albumArtUrl,
@@ -203,8 +210,10 @@ namespace AudaciousRPC
                         {
                             client.SetPresence(new RichPresence()
                             {
+                                Type = ActivityType.Listening,
                                 Details = $"{songInfo.Title}",
                                 State = $"by {songInfo.Artist}",
+                                StatusDisplay = StatusDisplayType.Details,
                                 Assets = new Assets()
                                 {
                                     LargeImageKey = "audacious_logo",
